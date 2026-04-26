@@ -1,4 +1,8 @@
+from __future__ import annotations
+
+import argparse
 import os
+from pathlib import Path
 
 import librosa
 import librosa.display
@@ -6,19 +10,57 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description=(
+            "First-look audio analysis: waveform + mel-spectrogram + chromagram, "
+            "plus a quick tempo estimate. Pass any WAV/MP3/FLAC; if no file is "
+            "given, falls back to librosa's bundled 'nutcracker' excerpt."
+        )
+    )
+    parser.add_argument(
+        "audio",
+        nargs="?",
+        default=None,
+        help="Path to an input audio file (.wav/.mp3/.flac). Optional.",
+    )
+    parser.add_argument(
+        "--duration",
+        type=float,
+        default=20.0,
+        help="Seconds to load from the start of the file (default: 20).",
+    )
+    parser.add_argument(
+        "--out-dir",
+        default="figures",
+        help="Directory to write the plot into (default: figures/).",
+    )
+    return parser.parse_args()
+
+
+def resolve_input(path_arg: str | None) -> tuple[str, str]:
+    """Return (path_to_load, label_for_titles)."""
+    if path_arg is None:
+        sample_name = "nutcracker"
+        return librosa.example(sample_name), sample_name
+
+    path = Path(path_arg).expanduser()
+    if not path.exists():
+        raise SystemExit(f"Audio file not found: {path}")
+    return str(path), path.stem
+
+
 def main() -> None:
-    os.makedirs("figures", exist_ok=True)
+    args = parse_args()
+    os.makedirs(args.out_dir, exist_ok=True)
 
-    # librosa ships with a few example audio files. "nutcracker" is
-    # a short orchestral excerpt — swap for "brahms" (solo piano) or
-    # any local WAV/MP3 later.
-    sample_name = "nutcracker"
-    filename = librosa.example(sample_name)
+    audio_path, label = resolve_input(args.audio)
 
-    # Load the first 20 seconds, preserving the original sample rate.
-    y, sr = librosa.load(filename, sr=None, duration=20.0)
+    # Load up to `duration` seconds, preserving the original sample rate.
+    y, sr = librosa.load(audio_path, sr=None, duration=args.duration)
 
-    print(f"Loaded example: {sample_name}")
+    print(f"Loaded: {audio_path}")
+    print(f"  label:       {label}")
     print(f"  sample rate: {sr} Hz")
     print(f"  duration:    {len(y) / sr:.2f} s")
     print(f"  samples:     {len(y):,}")
@@ -43,7 +85,7 @@ def main() -> None:
     fig, axes = plt.subplots(3, 1, figsize=(12, 9), sharex=True)
 
     librosa.display.waveshow(y, sr=sr, ax=axes[0])
-    axes[0].set_title(f"Waveform — {sample_name}")
+    axes[0].set_title(f"Waveform — {label}")
     axes[0].set_ylabel("Amplitude")
 
     mel_img = librosa.display.specshow(
@@ -59,7 +101,7 @@ def main() -> None:
     fig.colorbar(chroma_img, ax=axes[2])
 
     plt.tight_layout()
-    out_path = os.path.join("figures", "first_look.png")
+    out_path = os.path.join(args.out_dir, f"{label}_first_look.png")
     plt.savefig(out_path, dpi=120)
     plt.close(fig)
     print(f"\nSaved plot to {out_path}")
