@@ -1,0 +1,31 @@
+# madmom 0.16.1 (last PyPI release, 2018) hard-requires:
+#   - Python <= 3.9  (uses `from collections import MutableSequence`, removed in 3.10)
+#   - numpy <= 1.23  (uses `np.float`/`np.int` aliases, removed in numpy 1.24)
+#   - setuptools < 81 (needs `pkg_resources`, dropped from newer setuptools)
+# These pins keep the whole stack mutually compatible. Don't bump numpy/scipy/
+# setuptools independently without re-checking madmom still imports.
+#
+# madmom also needs numpy+cython importable *at build time* (no PEP 517 build
+# isolation) -- use setup_env.sh rather than a plain `pip install -r`.
+
+setuptools==80.10.2
+cython==3.2.9
+numpy==1.23.5
+scipy==1.10.1
+mido==1.3.3
+madmom==0.16.1
+
+librosa==0.11.0
+mir_eval==0.8.2
+matplotlib==3.9.4
+pandas==2.3.3
+numba==0.60.0
+soundfile==0.13.1
+tqdm==4.69.1
+pretty_midi==0.2.11  # synthesizes audio directly from ASAP MIDI performances,
+                     # so notebooks don't need the 103GB MAESTRO download
+
+jupyter==1.1.1
+ipykernel==6.31.0
+nbformat==5.8.0
+fastjsonschema==2.19.1  # newer releases use `X | Y` union syntax, Python 3.10+ only
